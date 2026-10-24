@@ -1,0 +1,4 @@
+# Store text files with LF line endings, so Docker/Linux see the same files as Windows
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
