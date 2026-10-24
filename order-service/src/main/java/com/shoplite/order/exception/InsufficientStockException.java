@@ -1,7 +1,6 @@
 package com.shoplite.order.exception;
 
-// Thrown when the product doesn't have enough stock for the order.
-// Step 3 turns this into a clear HTTP 400 via @ControllerAdvice.
+// Not enough stock for the order. Becomes HTTP 400 (see GlobalExceptionHandler).
 public class InsufficientStockException extends RuntimeException {
 
     public InsufficientStockException(String message) {
