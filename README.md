@@ -2,6 +2,21 @@
 
 A small microservices project built with **Java 17** and **Spring Boot 3**. Two independent services, an **order-service** and an **inventory-service**, each with its own PostgreSQL database. They talk to each other over HTTP using **Spring Cloud OpenFeign**. A small **Next.js + Material UI** frontend lets you browse products, place orders, and watch the stock change.
 
+## Live Demo
+
+- **App:** https://shoplite-microservices.vercel.app
+- **order-service API (Swagger):** https://shoplite-order-9eu9.onrender.com/swagger-ui.html
+- **inventory-service API (Swagger):** https://shoplite-inventory.onrender.com/swagger-ui.html
+
+The services run on Render's free plan and sleep when idle, so the **first request can take up to a minute** while they wake up.
+
+| Part              | Hosted on |
+|-------------------|-----------|
+| Frontend          | Vercel |
+| order-service     | Render (Docker, from [`render.yaml`](render.yaml)) |
+| inventory-service | Render (Docker, from [`render.yaml`](render.yaml)) |
+| Databases         | Neon (serverless PostgreSQL): `inventory_db` and `order_db` |
+
 ## What are microservices?
 
 Microservices split an application into small, independent services that each own one job and their own data. They communicate over the network (here, REST over HTTP), so each service can be built, deployed, and scaled on its own.
