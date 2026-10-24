@@ -1,0 +1,49 @@
+# Render "Blueprint": deploys both microservices from this repo.
+# In Render: New + -> Blueprint -> pick this repo. Values marked "sync: false" are asked for once.
+services:
+  - type: web
+    name: shoplite-inventory
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./inventory-service
+    dockerfilePath: ./inventory-service/Dockerfile
+    healthCheckPath: /products
+    envVars:
+      # From Neon, e.g. jdbc:postgresql://ep-xxx.ap-southeast-1.aws.neon.tech/inventory_db?sslmode=require
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Your Vercel URL, e.g. https://shoplite-xyz.vercel.app (no trailing slash)
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  - type: web
+    name: shoplite-order
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./order-service
+    dockerfilePath: ./order-service/Dockerfile
+    healthCheckPath: /orders
+    envVars:
+      # Same Neon server, but the order_db database
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # The inventory service's public URL, e.g. https://shoplite-inventory.onrender.com
+      - key: INVENTORY_SERVICE_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Free instances sleep when idle and take up to ~60s to wake, so give Feign time
+      - key: FEIGN_CONNECT_TIMEOUT_MS
+        value: "60000"
+      - key: FEIGN_READ_TIMEOUT_MS
+        value: "60000"
