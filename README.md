@@ -1,6 +1,6 @@
 # ShopLite – Order & Inventory Microservices
 
-A small microservices project built with **Java 17** and **Spring Boot 3**. Two independent services, an **order-service** and an **inventory-service**, each with its own PostgreSQL database. They talk to each other over HTTP using **Spring Cloud OpenFeign**.
+A small microservices project built with **Java 17** and **Spring Boot 3**. Two independent services, an **order-service** and an **inventory-service**, each with its own PostgreSQL database. They talk to each other over HTTP using **Spring Cloud OpenFeign**. A small **Next.js + Material UI** frontend lets you browse products, place orders, and watch the stock change.
 
 ## What are microservices?
 
@@ -17,14 +17,20 @@ Microservices split an application into small, independent services that each ow
 | Error handling  | `@RestControllerAdvice` (global exception handling), Bean Validation |
 | API docs        | Swagger UI / OpenAPI (springdoc) |
 | Testing         | JUnit 5, Mockito, MockMvc |
+| Frontend        | Next.js 15 (App Router), React 19, TypeScript, Material UI 7 |
 | DevOps          | Docker (multi-stage builds), Docker Compose |
 
 ## Architecture
 
 ```
-                        POST /orders {productId, quantity}
-                                     │
-                                     ▼
+                        ┌──────────────────────────────────────────────┐
+                        │   frontend (Next.js + MUI)   :3001           │
+                        │   Products page · Orders page · Buy dialog   │
+                        └──────────┬────────────────────────┬──────────┘
+                POST /orders,      │                        │  GET /products,
+                GET /orders        │                        │  POST /products
+                                   ▼                        └─────────────────────────────────────┐
+                                                                                                  ▼
 ┌──────────────────────────────────────────┐   OpenFeign (HTTP)   ┌──────────────────────────────────────────┐
 │          order-service  :8081            │ ───────────────────▶ │        inventory-service  :8082          │
 │                                          │ 1. GET /products/{id}│                                          │
@@ -52,6 +58,17 @@ Microservices split an application into small, independent services that each ow
 - **Database per service:** `order-service` never reads `inventory_db`. An order stores only the `productId`, with no cross-service foreign key.
 - **No overselling:** `inventory-service` checks and reduces stock in one atomic SQL statement (`UPDATE ... WHERE stock >= qty`), so parallel orders can't take more than what's available.
 - **Clear errors across services:** a Feign `ErrorDecoder` turns inventory-service's 404/400 responses into order-service exceptions, and `@RestControllerAdvice` returns them as JSON. If inventory-service is down, order-service answers **503** instead of crashing.
+
+## Frontend
+
+| Page | What it does |
+|------|--------------|
+| **Products** (`/products`) | Table of products with live stock (green / "5 left" / "Out of stock"), summary cards, **Buy** dialog, **Add product** dialog |
+| **Orders** (`/orders`) | All orders with product names, quantity, status, and time |
+
+- **Buy** calls `order-service`, which calls `inventory-service`. Errors from the backend are shown as-is in the dialog, e.g. *"Not enough stock for Keyboard: requested 9, available 5"*.
+- Orders only store a `productId`, so the Orders page also asks `inventory-service` for product names and joins them in the UI. Services never share a database.
+- Both services allow the frontend's origin through **CORS** (`CORS_ALLOWED_ORIGINS`).
 
 ## Endpoints
 
@@ -88,10 +105,13 @@ cd shoplite-microservices
 docker compose up --build
 ```
 
-This starts three containers:
+Then open **http://localhost:3001**.
+
+This starts four containers:
 
 | Container           | Port on your machine |
 |---------------------|----------------------|
+| `shoplite-frontend` | 3001 |
 | `order-service`     | 8081 |
 | `inventory-service` | 8082 |
 | `shoplite-postgres` | 5433 (holds `inventory_db` and `order_db`) |
@@ -188,7 +208,21 @@ docker compose up -d postgres                  # just the database
 
 cd inventory-service && mvn spring-boot:run    # terminal 1, port 8082
 cd order-service && mvn spring-boot:run        # terminal 2, port 8081
+cd frontend && npm install && npm run dev      # terminal 3, http://localhost:3000
 ```
+
+## Screenshots
+
+_Screenshots coming soon._
+
+<!--
+Save screenshots in docs/screenshots/ and uncomment:
+
+| Products | Buy dialog (error) | Orders |
+|----------|--------------------|--------|
+| ![Products](docs/screenshots/products.png) | ![Buy](docs/screenshots/buy-error.png) | ![Orders](docs/screenshots/orders.png) |
+-->
+
 
 ## Project Structure
 
@@ -205,6 +239,11 @@ shoplite-microservices/
 │   ├── src/test/java/...       JUnit + Mockito tests
 │   ├── Dockerfile
 │   └── pom.xml
+├── frontend/                   Next.js + TypeScript + Material UI
+│   ├── src/app/                Pages: products, orders
+│   ├── src/components/         Buy dialog, Add product dialog, navbar
+│   ├── src/lib/api.ts          Calls both services
+│   └── Dockerfile
 ├── docker/postgres/init.sql    Creates the second database (order_db)
 ├── docker-compose.yml
 └── README.md

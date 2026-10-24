@@ -1,4 +1,5 @@
 # Start everything:  docker compose up --build
+#   frontend           http://localhost:3001
 #   order-service      http://localhost:8081  (Swagger: /swagger-ui.html)
 #   inventory-service  http://localhost:8082  (Swagger: /swagger-ui.html)
 
@@ -32,6 +33,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/inventory_db
       DB_USERNAME: shoplite
       DB_PASSWORD: shoplite
+      # The frontend in Docker (3001) and `npm run dev` (3000)
+      CORS_ALLOWED_ORIGINS: http://localhost:3001,http://localhost:3000
     ports:
       - "8082:8082"
 
@@ -49,8 +52,23 @@ services:
       DB_PASSWORD: shoplite
       # Inside Docker, services find each other by their service name
       INVENTORY_SERVICE_URL: http://inventory-service:8082
+      CORS_ALLOWED_ORIGINS: http://localhost:3001,http://localhost:3000
     ports:
       - "8081:8081"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # The browser calls the services directly, so these are addresses as seen from your machine
+        NEXT_PUBLIC_ORDER_API_URL: http://localhost:8081
+        NEXT_PUBLIC_INVENTORY_API_URL: http://localhost:8082
+    container_name: shoplite-frontend
+    depends_on:
+      - order-service
+      - inventory-service
+    ports:
+      - "3001:3000" # 3001 on your machine, so it can run next to another app on 3000
 
 volumes:
   shoplite-pgdata:
